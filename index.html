@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Malla Curricular Ingeniería Industrial - UIS</title>
+<style>
+body{
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background:#f4f6fb;
+  margin:0; padding:20px;
+}
+h1{text-align:center;color:#2c3e50;}
+.grid{
+  display:grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap:12px;
+}
+.semester{
+  background:#ffffff;
+  border-radius:10px;
+  padding:10px;
+  box-shadow:0 4px 8px rgba(0,0,0,0.08);
+}
+.semester h2{
+  text-align:center;
+  font-size:16px;
+  color:#34495e;
+}
+.course{
+  background:#e8ecf5;
+  border-radius:8px;
+  padding:8px;
+  margin:6px 0;
+  cursor:pointer;
+  position:relative;
+  transition:all .2s;
+}
+.course:hover{transform:scale(1.02);}
+.course.approved{background:#b8e6c9;color:#1e8449;}
+.course.locked{
+  background:#f0f0f0;
+  color:#999;
+  cursor:not-allowed;
+}
+.course.locked:hover::after{
+  content:attr(data-tooltip);
+  position:absolute;
+  left:50%; top:100%;
+  transform:translateX(-50%);
+  background:#333; color:#fff;
+  padding:6px 8px;
+  border-radius:6px;
+  font-size:12px;
+  white-space:nowrap;
+  margin-top:6px;
+}
+</style>
+</head>
+<body>
+<h1>Malla Curricular Ingeniería Industrial – UIS</h1>
+<div class="grid" id="grid"></div>
+
+<script>
+const data = [
+  {s:1, c:[
+    {id:'cal1',n:'Cálculo I',cr:4},
+    {id:'alg1',n:'Álgebra Lineal I',cr:4},
+    {id:'geo',n:'Geometría Descriptiva',cr:4},
+    {id:'qui',n:'Química Básica',cr:4},
+    {id:'len',n:'Taller de Lenguaje',cr:3},
+    {id:'uis',n:'Cátedra UIS',cr:0}
+  ]},
+  {s:2, c:[
+    {id:'cal2',n:'Cálculo II',cr:4,req:['cal1']},
+    {id:'fis1',n:'Física I',cr:4,req:['cal1']},
+    {id:'bio',n:'Biología para Ingenieros',cr:2},
+    {id:'dep',n:'Cultura Física y Deporte',cr:1},
+    {id:'comp',n:'Estructuras Computacionales',cr:3},
+    {id:'intro',n:'Intro Ing. Industrial',cr:3}
+  ]},
+  {s:3, c:[
+    {id:'mec',n:'Mecánica Analítica',cr:4,req:['fis1']},
+    {id:'cal3',n:'Cálculo III',cr:4,req:['cal2']},
+    {id:'fis2',n:'Física II',cr:4,req:['fis1','cal2']},
+    {id:'ing1',n:'Inglés I',cr:4},
+    {id:'eco',n:'Entorno Económico',cr:3},
+    {id:'ctx1',n:'Contexto I',cr:2}
+  ]},
+  {s:4, c:[
+    {id:'ed',n:'Ecuaciones Diferenciales',cr:4,req:['cal3']},
+    {id:'ter',n:'Termodinámica I',cr:4,req:['fis2']},
+    {id:'fis3',n:'Física III',cr:4,req:['fis2']},
+    {id:'ing2',n:'Inglés II',cr:4,req:['ing1']},
+    {id:'cont',n:'Gestión Contable',cr:3}
+  ]},
+  {s:5, c:[
+    {id:'elec',n:'Electricidad y Electrónica',cr:3,req:['fis3']},
+    {id:'mat',n:'Ciencia de los Materiales',cr:3},
+    {id:'est1',n:'Estadística I',cr:3},
+    {id:'cost',n:'Costos',cr:3,req:['cont']},
+    {id:'dir1',n:'Dirección Empresarial',cr:3},
+    {id:'ctx2',n:'Contexto II',cr:2,req:['ctx1']}
+  ]},
+  {s:6, c:[
+    {id:'est2',n:'Estadística II',cr:3,req:['est1']},
+    {id:'io1',n:'Investigación de Operaciones I',cr:3,req:['est1']},
+    {id:'proc',n:'Procesos Industriales',cr:3},
+    {id:'ie',n:'Ingeniería Económica',cr:3,req:['eco']},
+    {id:'mkt',n:'Principios de Mercadeo',cr:3},
+    {id:'dir2',n:'Dirección Empresarial II',cr:3,req:['dir1']}
+  ]},
+  {s:7, c:[
+    {id:'est3',n:'Estadística III',cr:3,req:['est2']},
+    {id:'io2',n:'Investigación de Operaciones II',cr:3,req:['io1']},
+    {id:'do1',n:'Dirección de Operaciones I',cr:3,req:['io1']},
+    {id:'fin',n:'Finanzas y Presupuestos',cr:3,req:['ie']},
+    {id:'inv',n:'Investigación de Mercados',cr:3,req:['mkt']}
+  ]},
+  {s:8, c:[
+    {id:'sis',n:'Sistemas de Información',cr:3},
+    {id:'calidad',n:'Ingeniería de Calidad',cr:3,req:['est3']},
+    {id:'do2',n:'Dirección de Operaciones II',cr:3,req:['do1']},
+    {id:'sst',n:'Seguridad y Salud en el Trabajo',cr:3},
+    {id:'th',n:'Talento Humano',cr:3},
+    {id:'proy',n:'Formulación y Evaluación de Proyectos',cr:3,req:['ie']}
+  ]},
+  {s:9, c:[
+    {id:'tg1',n:'Trabajo de Grado I',cr:3,req:['do2']},
+    {id:'log',n:'Logística Integral',cr:3,req:['do2']},
+    {id:'dsp',n:'Diseño de Sistemas Productivos',cr:3,req:['do2']},
+    {id:'el1',n:'Electiva I',cr:3},
+    {id:'el2',n:'Electiva II',cr:3}
+  ]},
+  {s:10, c:[
+    {id:'tg2',n:'Trabajo de Grado II',cr:7,req:['tg1']},
+    {id:'el3',n:'Electiva III',cr:3},
+    {id:'el4',n:'Electiva IV',cr:3}
+  ]}
+];
+
+let progress = JSON.parse(localStorage.getItem('mallaUIS')) || {};
+
+function render(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML='';
+  data.forEach(sem=>{
+    const col = document.createElement('div');
+    col.className='semester';
+    col.innerHTML=`<h2>Semestre ${sem.s}</h2>`;
+    sem.c.forEach(mat=>{
+      const div = document.createElement('div');
+      div.className='course';
+      div.textContent=`${mat.n} (${mat.cr})`;
+      const req = mat.req || [];
+      const locked = req.some(r=>!progress[r]);
+      if(progress[mat.id]) div.classList.add('approved');
+      if(locked && !progress[mat.id]){
+        div.classList.add('locked');
+        div.dataset.tooltip='Falta aprobar: '+req.filter(r=>!progress[r]).join(', ');
+      }
+      div.onclick=()=>{
+        if(locked) return;
+        progress[mat.id]=!progress[mat.id];
+        localStorage.setItem('mallaUIS',JSON.stringify(progress));
+        render();
+      }
+      col.appendChild(div);
+    });
+    grid.appendChild(col);
+  });
+}
+render();
+</script>
+</body>
+</html>
