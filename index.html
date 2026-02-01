@@ -5,71 +5,84 @@
 <title>Malla Curricular Ingeniería Industrial - UIS</title>
 
 <style>
+:root{
+  --verde:#2ecc71;
+  --verde-osc:#1e8449;
+  --azul:#34495e;
+  --gris:#ecf0f1;
+  --fondo:#f5f7fa;
+}
+
 body{
-  font-family: "Segoe UI", Tahoma, sans-serif;
-  background:#f4f6fb;
   margin:0;
   padding:20px;
+  font-family:"Segoe UI", system-ui, sans-serif;
+  background:var(--fondo);
 }
 
 h1{
   text-align:center;
-  color:#2c3e50;
-  margin-bottom:25px;
+  color:var(--azul);
+  margin-bottom:30px;
+  letter-spacing:1px;
 }
 
 .grid{
   display:grid;
-  grid-template-columns: repeat(10, minmax(220px,1fr));
-  gap:14px;
+  grid-template-columns: repeat(10, minmax(230px,1fr));
+  gap:16px;
   overflow-x:auto;
 }
 
 .semester{
-  background:#ffffff;
-  border-radius:12px;
-  padding:12px;
-  box-shadow:0 6px 12px rgba(0,0,0,0.08);
+  background:#fff;
+  border-radius:14px;
+  padding:14px;
+  box-shadow:0 8px 16px rgba(0,0,0,.08);
+  border-top:6px solid var(--verde);
 }
 
 .semester h2{
   text-align:center;
-  font-size:16px;
-  color:#34495e;
-  margin-bottom:10px;
+  font-size:15px;
+  margin-bottom:12px;
+  color:var(--azul);
 }
 
 .course{
-  background:#e9edf7;
-  border-radius:8px;
-  padding:8px;
-  margin-bottom:8px;
-  cursor:pointer;
+  background:var(--gris);
+  border-radius:10px;
+  padding:10px;
+  margin-bottom:10px;
   font-size:13px;
+  cursor:pointer;
+  transition:.2s;
   position:relative;
-  transition:all 0.2s ease;
+  border-left:6px solid transparent;
 }
 
 .course:hover{
-  transform:scale(1.02);
+  transform:translateY(-2px);
 }
 
 .course.approved{
-  background:#c9f2d8;
-  color:#1e8449;
+  background:#d4f6e2;
+  color:var(--verde-osc);
+  border-left:6px solid var(--verde);
   font-weight:600;
 }
 
 .course.locked{
-  background:#f1f1f1;
-  color:#9a9a9a;
+  background:#eee;
+  color:#999;
   cursor:not-allowed;
+  border-left:6px solid #bbb;
 }
 
 .course.locked:hover::after{
-  content: attr(data-tooltip);
+  content:attr(data-tooltip);
   position:absolute;
-  bottom:-35px;
+  bottom:-38px;
   left:50%;
   transform:translateX(-50%);
   background:#333;
@@ -78,7 +91,7 @@ h1{
   border-radius:6px;
   font-size:12px;
   white-space:nowrap;
-  z-index:10;
+  z-index:20;
 }
 </style>
 </head>
@@ -105,7 +118,7 @@ const malla = [
   {id:'bio',n:'Biología para Ingenieros',cr:2},
   {id:'dep',n:'Cultura Física y Deporte',cr:1},
   {id:'comp',n:'Estructuras Computacionales',cr:3},
-  {id:'intro',n:'Introducción a la Ing. Industrial',cr:3}
+  {id:'intro',n:'Introducción a la Ingeniería Industrial',cr:3}
  ]},
  {s:3,c:[
   {id:'mec',n:'Mecánica Analítica',cr:4,req:['fis1']},
@@ -190,12 +203,18 @@ function render(){
 
       if(bloqueada && !progreso[mat.id]){
         div.classList.add("locked");
-        div.dataset.tooltip = "Falta aprobar: " + req.filter(r=>!progreso[r]).join(", ");
+        div.dataset.tooltip =
+          "Falta aprobar: " + req.filter(r=>!progreso[r]).join(", ");
       }
 
-      div.onclick = ()=>{
-        if(bloqueada) return;
-        progreso[mat.id] = !progreso[mat.id];
+      div.onclick = () => {
+        // CORRECCIÓN DEFINITIVA
+        if(progreso[mat.id]){
+          delete progreso[mat.id]; // siempre se puede desmarcar
+        } else {
+          if(bloqueada) return;
+          progreso[mat.id] = true;
+        }
         localStorage.setItem("mallaUIS", JSON.stringify(progreso));
         render();
       };
