@@ -8,7 +8,7 @@
 :root{
   --verde:#2ecc71;
   --verde-osc:#1e8449;
-  --azul:#34495e;
+  --azul:#2c3e50;
   --gris:#ecf0f1;
   --fondo:#f5f7fa;
 }
@@ -20,13 +20,26 @@ body{
   background:var(--fondo);
 }
 
-h1{
-  text-align:center;
-  color:var(--azul);
+/* ===== HEADER ===== */
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
   margin-bottom:30px;
+}
+
+.header img{
+  height:80px;
+  object-fit:contain;
+}
+
+.header h1{
+  color:var(--azul);
   letter-spacing:1px;
 }
 
+/* ===== GRID ===== */
 .grid{
   display:grid;
   grid-template-columns: repeat(10, minmax(230px,1fr));
@@ -34,6 +47,7 @@ h1{
   overflow-x:auto;
 }
 
+/* ===== SEMESTER ===== */
 .semester{
   background:#fff;
   border-radius:14px;
@@ -49,6 +63,7 @@ h1{
   color:var(--azul);
 }
 
+/* ===== COURSE ===== */
 .course{
   background:var(--gris);
   border-radius:10px;
@@ -57,7 +72,6 @@ h1{
   font-size:13px;
   cursor:pointer;
   transition:.2s;
-  position:relative;
   border-left:6px solid transparent;
 }
 
@@ -79,28 +93,73 @@ h1{
   border-left:6px solid #bbb;
 }
 
-.course.locked:hover::after{
-  content:attr(data-tooltip);
-  position:absolute;
-  bottom:-38px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#333;
+/* ===== MODAL PREREQUISITOS ===== */
+.modal-bg{
+  position:fixed;
+  top:0; left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,.5);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+
+.modal{
+  background:#fff;
+  padding:22px;
+  border-radius:14px;
+  max-width:420px;
+  width:90%;
+  box-shadow:0 12px 30px rgba(0,0,0,.3);
+}
+
+.modal h3{
+  margin-top:0;
+  color:var(--azul);
+}
+
+.modal ul{
+  padding-left:18px;
+}
+
+.modal button{
+  margin-top:15px;
+  background:var(--verde);
   color:#fff;
-  padding:6px 10px;
-  border-radius:6px;
-  font-size:12px;
-  white-space:nowrap;
-  z-index:20;
+  border:none;
+  padding:8px 18px;
+  border-radius:8px;
+  cursor:pointer;
 }
 </style>
 </head>
 
 <body>
 
-<h1>Malla Curricular – Ingeniería Industrial UIS</h1>
+<!-- ===== HEADER CON ESCUDO ===== -->
+<div class="header">
+  <!-- 🔽 OPCIÓN 1: imagen local -->
+  <img src="escudo_uis.png" alt="Escudo UIS">
+
+  <!-- 🔽 OPCIÓN 2: URL (si prefieres)
+  <img src="https://upload.wikimedia.org/wikipedia/commons/5/55/Escudo_Universidad_Industrial_de_Santander.png">
+  -->
+  <h1>Ingeniería Industrial – UIS</h1>
+</div>
 
 <div class="grid" id="grid"></div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-bg" id="modalBg" onclick="cerrarModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="modalTitulo"></h3>
+    <p>Faltan aprobar:</p>
+    <ul id="modalLista"></ul>
+    <button onclick="cerrarModal()">Cerrar</button>
+  </div>
+</div>
 
 <script>
 const malla = [
@@ -182,38 +241,52 @@ const malla = [
 
 let progreso = JSON.parse(localStorage.getItem("mallaUIS")) || {};
 
+function abrirModal(nombre, faltantes){
+  document.getElementById("modalTitulo").textContent = nombre;
+  const ul = document.getElementById("modalLista");
+  ul.innerHTML = "";
+  faltantes.forEach(f=>{
+    const li = document.createElement("li");
+    li.textContent = f;
+    ul.appendChild(li);
+  });
+  document.getElementById("modalBg").style.display = "flex";
+}
+
+function cerrarModal(){
+  document.getElementById("modalBg").style.display = "none";
+}
+
 function render(){
   const grid = document.getElementById("grid");
-  grid.innerHTML = "";
+  grid.innerHTML="";
 
   malla.forEach(sem=>{
     const col = document.createElement("div");
-    col.className = "semester";
-    col.innerHTML = `<h2>Semestre ${sem.s}</h2>`;
+    col.className="semester";
+    col.innerHTML=`<h2>Semestre ${sem.s}</h2>`;
 
     sem.c.forEach(mat=>{
       const div = document.createElement("div");
-      div.className = "course";
-      div.textContent = `${mat.n} (${mat.cr} cr)`;
+      div.className="course";
+      div.textContent=`${mat.n} (${mat.cr} cr)`;
 
       const req = mat.req || [];
-      const bloqueada = req.some(r => !progreso[r]);
+      const faltantes = req.filter(r=>!progreso[r]);
+      const bloqueada = faltantes.length>0;
 
       if(progreso[mat.id]) div.classList.add("approved");
+      if(bloqueada && !progreso[mat.id]) div.classList.add("locked");
 
-      if(bloqueada && !progreso[mat.id]){
-        div.classList.add("locked");
-        div.dataset.tooltip =
-          "Falta aprobar: " + req.filter(r=>!progreso[r]).join(", ");
-      }
-
-      div.onclick = () => {
-        // CORRECCIÓN DEFINITIVA
+      div.onclick=()=>{
         if(progreso[mat.id]){
-          delete progreso[mat.id]; // siempre se puede desmarcar
-        } else {
-          if(bloqueada) return;
-          progreso[mat.id] = true;
+          delete progreso[mat.id];
+        }else{
+          if(bloqueada){
+            abrirModal(mat.n, faltantes);
+            return;
+          }
+          progreso[mat.id]=true;
         }
         localStorage.setItem("mallaUIS", JSON.stringify(progreso));
         render();
@@ -221,7 +294,6 @@ function render(){
 
       col.appendChild(div);
     });
-
     grid.appendChild(col);
   });
 }
